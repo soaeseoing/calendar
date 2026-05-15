@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:transparent;font-family:'IM Fell English',Georgia,serif;padding:16px;display:flex;justify-content:center}
+.wrap{background:#faf6f0;border:1.5px solid #c8b89a;border-radius:2px;width:100%;max-width:480px;box-shadow:2px 3px 0 #c8b89a44}
+.cal-header{background:#e8ddd0;border-bottom:1px solid #c8b89a;display:flex;align-items:center;justify-content:space-between;padding:14px 20px 12px}
+.cal-nav{background:none;border:1px solid #c8b89a;border-radius:1px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#9b8878;font-size:16px;transition:background 0.15s}
+.cal-nav:hover{background:#d4c4b0}
+.cal-title{font-family:'Playfair Display',serif;font-size:19px;font-weight:400;font-style:italic;color:#3a2e24;letter-spacing:0.03em;text-align:center;flex:1}
+.cal-title span{font-style:normal;font-size:13px;color:#9b8878;margin-left:6px;font-family:'IM Fell English',serif}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid #c8b89a;background:#e8ddd0}
+.cal-weekdays div{text-align:center;padding:7px 0 6px;font-size:11px;letter-spacing:0.1em;color:#9b8878;font-style:italic}
+.cal-weekdays div:first-child{color:#8b3a2a}
+.cal-weekdays div:last-child{color:#4a6741}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:8px 10px 10px;gap:2px}
+.day{text-align:center;padding:6px 2px 4px;font-size:14px;color:#3a2e24;cursor:pointer;border-radius:1px;transition:background 0.12s;position:relative;min-height:34px}
+.day:hover{background:#f0e8dc}
+.day.other{color:#c8b89a;cursor:default}
+.day.other:hover{background:none}
+.day.sun{color:#8b3a2a}
+.day.sat{color:#4a6741}
+.day.today{background:#d4b896;font-weight:500}
+.day.today::after{content:'';display:block;width:3px;height:3px;background:#8b3a2a;border-radius:50%;margin:2px auto 0}
+.day.has-event .num::after{content:'·';display:block;font-size:14px;line-height:0.6;color:#9b8878;margin-top:2px}
+.day.selected{background:#e0d0bc;outline:1px solid #c8b89a}
+hr{border:none;border-top:1px solid #c8b89a}
+.events-panel{padding:12px 18px 14px;min-height:88px}
+.panel-date{font-family:'Playfair Display',serif;font-style:italic;font-size:14px;color:#9b8878;margin-bottom:8px}
+.event-list{list-style:none;margin-bottom:6px}
+.event-item{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid #e8ddd0;font-size:13px;color:#3a2e24}
+.event-item:last-child{border-bottom:none}
+.event-del{background:none;border:none;cursor:pointer;color:#c8b89a;font-size:16px;line-height:1;padding:0 2px;transition:color 0.12s}
+.event-del:hover{color:#8b3a2a}
+.add-row{display:flex;gap:6px;margin-top:6px}
+.add-input{flex:1;background:#f0e8dc;border:1px solid #c8b89a;border-radius:1px;padding:5px 8px;font-family:'IM Fell English',serif;font-size:13px;color:#3a2e24;outline:none}
+.add-input::placeholder{color:#b8a890;font-style:italic}
+.add-input:focus{border-color:#9b8878}
+.add-btn{background:#e8ddd0;border:1px solid #c8b89a;border-radius:1px;padding:5px 10px;font-family:'IM Fell English',serif;font-size:12px;color:#3a2e24;cursor:pointer;white-space:nowrap;transition:background 0.12s}
+.add-btn:hover{background:#d4c4b0}
+.add-btn:disabled{opacity:0.5;cursor:default}
+.empty-hint{font-size:12px;color:#c8b89a;font-style:italic;padding:4px 0}
+.status{font-size:11px;color:#b8a890;font-style:italic;margin-top:4px;min-height:16px}
+.cal-footer{border-top:1px solid #c8b89a;padding:7px 20px;display:flex;justify-content:space-between;align-items:center}
+.today-btn{background:none;border:none;font-family:'IM Fell English',serif;font-style:italic;font-size:12px;color:#9b8878;cursor:pointer;transition:color 0.15s}
+.today-btn:hover{color:#3a2e24}
+.dots{font-size:10px;color:#c8b89a;letter-spacing:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="cal-header">
+    <button class="cal-nav" id="prev">&#8249;</button>
+    <div class="cal-title" id="title"></div>
+    <button class="cal-nav" id="next">&#8250;</button>
+  </div>
+  <div class="cal-weekdays">
+    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+  </div>
+  <div class="cal-grid" id="grid"></div>
+  <hr>
+  <div class="events-panel">
+    <div class="panel-date" id="panel-date">날짜를 선택하세요</div>
+    <ul class="event-list" id="event-list"></ul>
+    <div class="add-row" id="add-row" style="display:none">
+      <input class="add-input" id="add-input" placeholder="일정을 입력하세요..." maxlength="40">
+      <button class="add-btn" id="add-btn">+ 추가</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+  <div class="cal-footer">
+    <button class="today-btn" id="today-btn">— today —</button>
+    <div class="dots">· · ·</div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbx6NTc1Tv7GUY8NmSepYwk_DnHJ9cRjphKU8g2WLa_dVV6nHxGXhM5HRU5cnsAflAoi/exec';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const KO_DAYS = ['일','월','화','수','목','금','토'];
+
+let now = new Date(), cur = {y: now.getFullYear(), m: now.getMonth()};
+let selected = null;
+let events = {};
+
+function dateKey(y, m, d) {
+  return y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+function setStatus(msg, isErr) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = isErr ? '#8b3a2a' : '#b8a890';
+}
+
+async function loadEvents() {
+  setStatus('불러오는 중...');
+  try {
+    const res = await fetch(API);
+    const data = await res.json();
+    events = {};
+    data.forEach(row => {
+      if (!row.date || !row.title) return;
+      const k = row.date;
+      if (!events[k]) events[k] = [];
+      events[k].push(row.title);
+    });
+    setStatus('');
+    render();
+    renderPanel();
+  } catch(e) {
+    setStatus('불러오기 실패. 새로고침 해주세요.', true);
+  }
+}
+
+async function addEvent() {
+  const inp = document.getElementById('add-input');
+  const val = inp.value.trim();
+  if (!val || !selected) return;
+  const k = dateKey(selected.y, selected.m, selected.d);
+  const btn = document.getElementById('add-btn');
+  btn.disabled = true;
+  setStatus('저장 중...');
+  try {
+    await fetch(API, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'add', date: k, title: val})
+    });
+    if (!events[k]) events[k] = [];
+    events[k].push(val);
+    inp.value = '';
+    setStatus('저장됨');
+    setTimeout(() => setStatus(''), 1500);
+    render();
+    renderPanel();
+  } catch(e) {
+    setStatus('저장 실패', true);
+  }
+  btn.disabled = false;
+}
+
+async function deleteEvent(k, title, i) {
+  setStatus('삭제 중...');
+  try {
+    await fetch(API, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: 'delete', date: k, title: title})
+    });
+    events[k].splice(i, 1);
+    if (!events[k].length) delete events[k];
+    setStatus('');
+    render();
+    renderPanel();
+  } catch(e) {
+    setStatus('삭제 실패', true);
+  }
+}
+
+function renderPanel() {
+  const addRow = document.getElementById('add-row');
+  if (!selected) {
+    document.getElementById('panel-date').textContent = '날짜를 선택하세요';
+    document.getElementById('event-list').innerHTML = '';
+    addRow.style.display = 'none';
+    return;
+  }
+  const {y, m, d} = selected;
+  const dow = new Date(y, m, d).getDay();
+  document.getElementById('panel-date').textContent =
+    y + '년 ' + (m+1) + '월 ' + d + '일 (' + KO_DAYS[dow] + ')';
+  addRow.style.display = 'flex';
+  const k = dateKey(y, m, d);
+  const evs = events[k] || [];
+  const list = document.getElementById('event-list');
+  list.innerHTML = '';
+  if (evs.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'empty-hint';
+    li.textContent = '등록된 일정이 없습니다';
+    list.appendChild(li);
+  } else {
+    evs.forEach((ev, i) => {
+      const li = document.createElement('li'); li.className = 'event-item';
+      const txt = document.createElement('span'); txt.textContent = '· ' + ev;
+      const btn = document.createElement('button'); btn.className = 'event-del'; btn.textContent = '×';
+      btn.onclick = () => deleteEvent(k, ev, i);
+      li.appendChild(txt); li.appendChild(btn); list.appendChild(li);
+    });
+  }
+}
+
+function render() {
+  const {y, m} = cur;
+  document.getElementById('title').innerHTML = MONTHS[m] + '<span>' + y + '</span>';
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const first = new Date(y, m, 1).getDay();
+  const days = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  const today = new Date();
+  for (let i = 0; i < first; i++) {
+    const el = document.createElement('div');
+    el.className = 'day other';
+    el.innerHTML = '<span class="num">' + (prevDays - first + 1 + i) + '</span>';
+    grid.appendChild(el);
+  }
+  for (let d = 1; d <= days; d++) {
+    const el = document.createElement('div');
+    const dow = (first + d - 1) % 7;
+    let cls = 'day';
+    if (dow === 0) cls += ' sun';
+    if (dow === 6) cls += ' sat';
+    if (y === today.getFullYear() && m === today.getMonth() && d === today.getDate()) cls += ' today';
+    const k = dateKey(y, m, d);
+    if (events[k] && events[k].length) cls += ' has-event';
+    if (selected && selected.y === y && selected.m === m && selected.d === d) cls += ' selected';
+    el.className = cls;
+    el.innerHTML = '<span class="num">' + d + '</span>';
+    el.onclick = (dd => () => { selected = {y, m, d: dd}; render(); renderPanel(); })(d);
+    grid.appendChild(el);
+  }
+  const total = first + days;
+  const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) {
+    const el = document.createElement('div');
+    el.className = 'day other';
+    el.innerHTML = '<span class="num">' + i + '</span>';
+    grid.appendChild(el);
+  }
+}
+
+document.getElementById('prev').onclick = () => { cur.m--; if (cur.m < 0) { cur.m = 11; cur.y--; } render(); };
+document.getElementById('next').onclick = () => { cur.m++; if (cur.m > 11) { cur.m = 0; cur.y++; } render(); };
+document.getElementById('today-btn').onclick = () => { const n = new Date(); cur = {y: n.getFullYear(), m: n.getMonth()}; render(); };
+document.getElementById('add-btn').onclick = addEvent;
+document.getElementById('add-input').addEventListener('keydown', e => { if (e.key === 'Enter') addEvent(); });
+
+loadEvents();
+</script>
+</body>
+</html>
